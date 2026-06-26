@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Träningsapp · Moodboard</title>
+<style>
+  :root{
+    --page-bg:#eceef1;
+    --ink:#1d2127;
+    --ink-soft:#5b6470;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--page-bg);
+    color:var(--ink);
+    line-height:1.5;
+    padding:48px 24px 80px;
+  }
+  .page-head{max-width:980px;margin:0 auto 40px;text-align:center}
+  .page-head h1{font-size:34px;letter-spacing:-.5px;margin-bottom:10px}
+  .page-head p{color:var(--ink-soft);font-size:16px;max-width:620px;margin:0 auto}
+  .concept{
+    max-width:980px;margin:0 auto 56px;background:#fff;border-radius:18px;padding:26px 30px;
+    box-shadow:0 1px 3px rgba(0,0,0,.06);display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+  }
+  .concept div h3{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:6px}
+  .concept div p{font-size:14px;color:var(--ink)}
+  @media(max-width:760px){.concept{grid-template-columns:1fr}}
+
+  .direction{max-width:980px;margin:0 auto 64px}
+  .dir-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .dir-head h2{font-size:24px;letter-spacing:-.3px}
+  .dir-head .tag{font-size:12px;font-weight:600;color:#fff;padding:3px 10px;border-radius:999px}
+  .dir-desc{color:var(--ink-soft);font-size:15px;margin-bottom:16px;max-width:680px}
+  .swatches{display:flex;gap:8px;margin-bottom:22px}
+  .swatches i{width:30px;height:30px;border-radius:8px;display:block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+  .phones{display:flex;gap:28px;flex-wrap:wrap}
+
+  /* ---------- Phone frame ---------- */
+  .phone{
+    width:290px;flex:0 0 auto;border-radius:40px;background:#0c0d10;padding:11px;
+    box-shadow:0 18px 40px -12px rgba(0,0,0,.4);
+  }
+  .screen{
+    border-radius:30px;overflow:hidden;height:600px;display:flex;flex-direction:column;
+    background:var(--bg);color:var(--text);font-size:14px;position:relative;
+  }
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 4px;font-size:12px;font-weight:600;opacity:.75}
+  .scr-body{flex:1;overflow:hidden;padding:6px 18px 0}
+  .scr-label{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;opacity:.45;letter-spacing:.04em}
+
+  /* day screen pieces */
+  .day-top{display:flex;justify-content:space-between;align-items:flex-start;margin:6px 0 16px}
+  .day-top .big{font-size:26px;font-weight:700;letter-spacing:-.4px}
+  .day-top .sub{font-size:12px;color:var(--muted)}
+  .train-badge{font-size:11px;font-weight:700;padding:5px 11px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink)}
+
+  .ex{background:var(--surface);border-radius:var(--card-radius);padding:14px 15px;margin-bottom:13px;border:var(--card-border)}
+  .ex-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+  .ex-name{font-weight:700;font-size:15px}
+  .ex-goal{font-size:11px;color:var(--muted)}
+  .dots{display:flex;gap:8px;margin-bottom:12px}
+  .dot{flex:1;height:30px;border-radius:9px;background:var(--dot-bg);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted)}
+  .dot.filled{background:var(--accent);color:var(--on-accent)}
+  .logbtn{width:100%;border:none;padding:11px;border-radius:12px;background:var(--btn-bg);color:var(--btn-ink);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+
+  .day-summary{margin-top:6px;background:var(--surface);border-radius:var(--card-radius);padding:14px 15px;border:var(--card-border)}
+  .bar{height:9px;border-radius:999px;background:var(--dot-bg);overflow:hidden;margin-top:9px}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:999px}
+
+  /* calendar pieces */
+  .cal-top{display:flex;justify-content:space-between;align-items:center;margin:8px 2px 14px}
+  .cal-top .m{font-size:20px;font-weight:700}
+  .cal-top .y{font-size:12px;color:var(--muted)}
+  .wk{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:6px}
+  .wk span{text-align:center;font-size:10px;font-weight:700;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .cell{aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;position:relative;color:var(--muted);background:transparent}
+  .cell span{position:relative;z-index:2}
+  .cell.scheduled{color:var(--text);box-shadow:inset 0 0 0 1.5px var(--sched-ring)}
+  .cell.done{background:var(--accent);color:var(--on-accent);box-shadow:none;font-weight:700}
+  .cell.missed{color:var(--miss-ink);box-shadow:inset 0 0 0 1.5px var(--miss-ring)}
+  .cell.partial{box-shadow:inset 0 0 0 2px var(--accent)}
+  .cell.partial::after{content:"";position:absolute;inset:0;border-radius:10px;background:var(--accent);clip-path:inset(50% 0 0 0);opacity:.9}
+  .cell.today span{font-weight:800}
+  .cell.today::before{content:"";position:absolute;inset:-3px;border-radius:13px;box-shadow:0 0 0 2px var(--today-ring)}
+  .legend{margin-top:16px;display:flex;flex-direction:column;gap:7px}
+  .legend div{display:flex;align-items:center;gap:9px;font-size:11px;color:var(--muted)}
+  .legend i{width:16px;height:16px;border-radius:5px;flex:0 0 auto}
+  .streak{margin-top:14px;background:var(--surface);border-radius:var(--card-radius);padding:12px 14px;border:var(--card-border);display:flex;justify-content:space-between;align-items:center}
+  .streak b{font-size:22px}
+  .streak small{font-size:11px;color:var(--muted)}
+
+  .tabbar{display:flex;justify-content:space-around;padding:12px 0 16px;border-top:var(--tab-border);background:var(--tab-bg)}
+  .tabbar div{font-size:11px;font-weight:600;color:var(--muted);text-align:center}
+  .tabbar div.on{color:var(--accent-ink2)}
+  .tabbar div b{display:block;font-size:16px;margin-bottom:2px}
+
+  /* ============ THEME: MINIMAL ============ */
+  .t-minimal{
+    --bg:#f7f7f4;--surface:#ffffff;--text:#23272e;--muted:#9aa1ab;
+    --accent:#6f8f6a;--accent-soft:#e7eee4;--accent-ink:#46603f;--accent-ink2:#6f8f6a;--on-accent:#fff;
+    --card-radius:16px;--card-border:1px solid #ecedea;--dot-bg:#f0f1ee;
+    --btn-bg:#23272e;--btn-ink:#fff;
+    --sched-ring:#d6ddd3;--miss-ring:#e7d3d3;--miss-ink:#b98a8a;--today-ring:#6f8f6a;
+    --tab-border:1px solid #ecedea;--tab-bg:#fff;
+  }
+  /* ============ THEME: DARK ============ */
+  .t-dark{
+    --bg:#15171c;--surface:#1e2127;--text:#f1f3f6;--muted:#7b8290;
+    --accent:#c6f24e;--accent-soft:#2b3320;--accent-ink:#c6f24e;--accent-ink2:#c6f24e;--on-accent:#15171c;
+    --card-radius:18px;--card-border:1px solid #282c34;--dot-bg:#282c34;
+    --btn-bg:#c6f24e;--btn-ink:#15171c;
+    --sched-ring:#3a414d;--miss-ring:#4a3030;--miss-ink:#c98a8a;--today-ring:#c6f24e;
+    --tab-border:1px solid #282c34;--tab-bg:#1a1d22;
+  }
+  .t-dark .dot.filled,.t-dark .cell.done{box-shadow:0 0 12px -2px var(--accent)}
+  /* ============ THEME: WARM ============ */
+  .t-warm{
+    --bg:#fbf3ea;--surface:#fffaf3;--text:#3a2f28;--muted:#b09c8c;
+    --accent:#f08a3c;--accent-soft:#fde4cf;--accent-ink:#c25e16;--accent-ink2:#e07a2c;--on-accent:#fff;
+    --card-radius:22px;--card-border:1px solid #f1e4d4;--dot-bg:#f3e7d8;
+    --btn-bg:#f08a3c;--btn-ink:#fff;
+    --sched-ring:#f0d8bd;--miss-ring:#f0cdbd;--miss-ink:#c98a6a;--today-ring:#f08a3c;
+    --tab-border:1px solid #f1e4d4;--tab-bg:#fffaf3;
+  }
+  .t-warm .phone{background:#3a2f28}
+  .t-warm .logbtn{border-radius:999px}
+  .t-warm .dot{border-radius:999px}
+  /* ============ THEME: DATA ============ */
+  .t-data{
+    --bg:#f4f6fb;--surface:#ffffff;--text:#172033;--muted:#8a93a6;
+    --accent:#2f6df0;--accent-soft:#e3ecfe;--accent-ink:#1f4fc0;--accent-ink2:#2f6df0;--on-accent:#fff;
+    --card-radius:14px;--card-border:1px solid #e7ebf3;--dot-bg:#eef1f7;
+    --btn-bg:#2f6df0;--btn-ink:#fff;
+    --sched-ring:#cdd9f5;--miss-ring:#f3d2d2;--miss-ink:#c07a7a;--today-ring:#2f6df0;
+    --tab-border:1px solid #e7ebf3;--tab-bg:#fff;
+  }
+  .t-data .ex{padding:11px 13px;margin-bottom:9px}
+  .t-data .dot{height:24px}
+
+  .note{max-width:980px;margin:0 auto;background:#fff;border-radius:18px;padding:24px 28px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .note h3{margin-bottom:10px;font-size:18px}
+  .note ul{margin-left:18px;color:var(--ink-soft);font-size:14px}
+  .note li{margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>Träningsapp · Moodboard</h1>
+  <p>Fyra designriktningar för din app. Varje riktning visar <b>dagvyn</b> (där du trycker för att logga ett set) och <b>kalendervyn</b> (månad, vecka för vecka, med träningsdagar och utförda dagar). Inget är byggt på riktigt än — välj en känsla du gillar så bygger vi vidare på den.</p>
+</div>
+
+<div class="concept">
+  <div><h3>Upplägg</h3><p>Armhävningar 10×3 och squats 10×3, varannan dag. Du loggar ett set i taget när du hinner.</p></div>
+  <div><h3>Dagvy</h3><p>Stora knappar att trycka på direkt från jobbet — ett tryck = ett klart set.</p></div>
+  <div><h3>Kalender</h3><p>Ring = planerad dag · fylld = klar · halv = påbörjad · röd = missad.</p></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- DIRECTION 1: MINIMAL -->
+<!-- ============================================================ -->
+<section class="direction">
+  <div class="dir-head"><h2>1 · Lugn & minimal</h2><span class="tag" style="background:#6f8f6a">Stillsam</span></div>
+  <p class="dir-desc">Ljust, luftigt och avskalat. Salviagrön accent, mjuka kort och tydlig typografi. Känns lugnt och inte "gym-pepptaggat" — bra om du vill ha något diskret.</p>
+  <div class="swatches"><i style="background:#f7f7f4"></i><i style="background:#6f8f6a"></i><i style="background:#e7eee4"></i><i style="background:#23272e"></i></div>
+  <div class="phones">
+    <div class="phone"><div class="screen t-minimal">
+      <div class="statusbar"><span>9:41</span><span>100%</span></div>
+      <div class="scr-body">
+        <div class="day-top"><div><div class="big">Idag</div><div class="sub">Fredag 26 juni</div></div><div class="train-badge">Träningsdag</div></div>
+        <div class="ex">
+          <div class="ex-top"><div class="ex-name">Armhävningar</div><div class="ex-goal">10 × 3 set</div></div>
+          <div class="dots"><div class="dot filled">✓</div><div class="dot filled">✓</div><div class="dot">3</div></div>
+          <button class="logbtn">Logga set</button>
+        </div>
+        <div class="ex">
+          <div class="ex-top"><div class="ex-name">Squats</div><div class="ex-goal">10 × 3 set</div></div>
+          <div class="dots"><div class="dot filled">✓</div><div class="dot">2</div><div class="dot">3</div></div>
+          <button class="logbtn">Logga set</button>
+        </div>
+        <div class="day-summary"><div style="display:flex;justify-content:space-between"><span>Dagens framsteg</span><b>3 / 6 set</b></div><div class="bar"><i style="width:50%"></i></div></div>
+      </div>
+      <div class="tabbar"><div class="on"><b>●</b>Idag</div><div><b>▦</b>Kalender</div><div><b>⚙</b>Inställningar</div></div>
+    </div></div>
+
+    <div class="phone"><div class="screen t-minimal">
+      <div class="statusbar"><span>9:41</span><span>100%</span></div>
+      <div class="scr-body">
+        <div class="cal-top"><div class="m">Juni</div><div class="y">2026</div></div>
+        <div class="wk"><span>M</span><span>T</span><span>O</span><span>T</span><span>F</span><span>L</span><span>S</span></div>
+        <div class="grid" data-cal></div>
+        <div class="legend">
+          <div><i style="box-shadow:inset 0 0 0 1.5px #d6ddd3"></i> Planerad träningsdag</div>
+          <div><i style="background:#6f8f6a"></i> Klar — alla set gjorda</div>
+          <div><i style="box-shadow:inset 0 0 0 2px #6f8f6a;background:linear-gradient(to top,#6f8f6a 50%,transparent 50%)"></i> Påbörjad</div>
+          <div><i style="box-shadow:inset 0 0 0 1.5px #e7d3d3"></i> Missad</div>
+        </div>
+      </div>
+      <div class="tabbar"><div><b>●</b>Idag</div><div class="on"><b>▦</b>Kalender</div><div><b>⚙</b>Inställningar</div></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- DIRECTION 2: DARK -->
+<!-- ============================================================ -->
+<section class="direction">
+  <div class="dir-head"><h2>2 · Mörk & fokuserad</h2><span class="tag" style="background:#9bbf2c">Energi</span></div>
+  <p class="dir-desc">Mörkt gränssnitt med lime-accent och stora siffror. Tydligt även med en snabb blick i fickan, och accenten "lyser" när ett set blir klart. Känns mer som ett träningsverktyg.</p>
+  <div class="swatches"><i style="background:#15171c"></i><i style="background:#c6f24e"></i><i style="background:#1e2127"></i><i style="background:#282c34"></i></div>
+  <div class="phones">
+    <div class="phone"><div class="screen t-dark">
+      <div class="statusbar"><span>9:41</span><span>100%</span></div>
+      <div class="scr-body">
+        <div class="day-top"><div><div class="big">Idag</div><div class="sub">Fre 26 juni</div></div><div class="train-badge">Träningsdag</div></div>
+        <div class="ex">
+          <div class="ex-top"><div class="ex-name">Armhävningar</div><div class="ex-goal">10 × 3</div></div>
+          <div class="dots"><div class="dot filled">✓</div><div class="dot filled">✓</div><div class="dot">3</div></div>
+          <button class="logbtn">+ Logga set</button>
+        </div>
+        <div class="ex">
+          <div class="ex-top"><div class="ex-name">Squats</div><div class="ex-goal">10 × 3</div></div>
+          <div class="dots"><div class="dot filled">✓</div><div class="dot">2</div><div class="dot">3</div></div>
+          <button class="logbtn">+ Logga set</button>
+        </div>
+        <div class="day-summary"><div style="display:flex;justify-content:space-between"><span>Dagens framsteg</span><b>3 / 6</b></div><div class="bar"><i style="width:50%"></i></div></div>
+      </div>
+      <div class="tabbar"><div class="on"><b>●</b>Idag</div><div><b>▦</b>Kalender</div><div><b>⚙</b>Mer</div></div>
+    </div></div>
+
+    <div class="phone"><div class="screen t-dark">
+      <div class="statusbar"><span>9:41</span><span>100%</span></div>
+      <div class="scr-body">
+        <div class="cal-top"><div class="m">Juni</div><div class="y">2026</div></div>
+        <div class="wk"><span>M</span><span>T</span><span>O</span><span>T</span><span>F</span><span>L</span><span>S</span></div>
+        <div class="grid" data-cal></div>
+        <div class="streak"><div><small>Nuvarande streak</small><br><b>5 dagar 🔥</b></div><div style="text-align:right"><small>Denna månad</small><br><b>11/13</b></div></div>
+      </div>
+      <div class="tabbar"><div><b>●</b>Idag</div><div class="on"><b>▦</b>Kalender</div><div><b>⚙</b>Mer</div></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- DIRECTION 3: WARM -->
+<!-- ============================================================ -->
+<section class="direction">
+  <div class="dir-head"><h2>3 · Varm & vänlig</h2><span class="tag" style="background:#f08a3c">Peppande</span></div>
+  <p class="dir-desc">Varma toner, runda former och rundade knappar. Känns inbjudande och lågtröskligt — peppar utan att stressa. Bra om appen ska kännas snäll mot en otränad nybörjare.</p>
+  <div class="swatches"><i style="background:#fbf3ea"></i><i style="background:#f08a3c"></i><i style="background:#fde4cf"></i><i style="background:#3a2f28"></i></div>
+  <div class="phones">
+    <div class="phone"><div class="screen t-warm">
+      <div class="statusbar"><span>9:41</span><span>100%</span></div>
+      <div class="scr-body">
+        <div class="day-top"><div><div class="big">Hej! 👋</div><div class="sub">Dags att röra på dig</div></div><div class="train-badge">Träningsdag</div></div>
+        <div class="ex">
+          <div class="ex-top"><div class="ex-name">Armhävningar</div><div class="ex-goal">10 × 3 set</div></div>
+          <div class="dots"><div class="dot filled">✓</div><div class="dot filled">✓</div><div class="dot">3</div></div>
+          <button class="logbtn">Klarade ett set!</button>
+        </div>
+        <div class="ex">
+          <div class="ex-top"><div class="ex-name">Squats</div><div class="ex-goal">10 × 3 set</div></div>
+          <div class="dots"><div class="dot filled">✓</div><div class="dot">2</div><div class="dot">3</div></div>
+          <button class="logbtn">Klarade ett set!</button>
+        </div>
+        <div class="day-summary"><div style="display:flex;justify-content:space-between"><span>Halvvägs — bra jobbat!</span><b>3 / 6</b></div><div class="bar"><i style="width:50%"></i></div></div>
+      </div>
+      <div class="tabbar"><div class="on"><b>●</b>Idag</div><div><b>▦</b>Kalender</div><div><b>⚙</b>Inställningar</div></div>
+    </div></div>
+
+    <div class="phone"><div class="screen t-warm">
+      <div class="statusbar"><span>9:41</span><span>100%</span></div>
+      <div class="scr-body">
+        <div class="cal-top"><div class="m">Juni</div><div class="y">2026</div></div>
+        <div class="wk"><span>M</span><span>T</span><span>O</span><span>T</span><span>F</span><span>L</span><span>S</span></div>
+        <div class="grid" data-cal></div>
+        <div class="legend">
+          <div><i style="box-shadow:inset 0 0 0 1.5px #f0d8bd"></i> Planerad dag</div>
+          <div><i style="background:#f08a3c"></i> Klar</div>
+          <div><i style="box-shadow:inset 0 0 0 2px #f08a3c;background:linear-gradient(to top,#f08a3c 50%,transparent 50%)"></i> Påbörjad</div>
+        </div>
+      </div>
+      <div class="tabbar"><div><b>●</b>Idag</div><div class="on"><b>▦</b>Kalender</div><div><b>⚙</b>Inställningar</div></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- DIRECTION 4: DATA -->
+<!-- ============================================================ -->
+<section class="direction">
+  <div class="dir-head"><h2>4 · Data & streak</h2><span class="tag" style="background:#2f6df0">Översikt</span></div>
+  <p class="dir-desc">Ljust och kompakt med blå accent och fokus på statistik: streak, total och historik högst upp. Bra om du gillar att se siffror och få belöning av att hålla igång en obruten kedja.</p>
+  <div class="swatches"><i style="background:#f4f6fb"></i><i style="background:#2f6df0"></i><i style="background:#e3ecfe"></i><i style="background:#172033"></i></div>
+  <div class="phones">
+    <div class="phone"><div class="screen t-data">
+      <div class="statusbar"><span>9:41</span><span>100%</span></div>
+      <div class="scr-body">
+        <div class="day-top"><div><div class="big">Idag</div><div class="sub">26 juni · 3 av 6 set</div></div><div class="train-badge">🔥 5</div></div>
+        <div class="ex">
+          <div class="ex-top"><div class="ex-name">Armhävningar</div><div class="ex-goal">10 × 3</div></div>
+          <div class="dots"><div class="dot filled">✓</div><div class="dot filled">✓</div><div class="dot">3</div></div>
+          <button class="logbtn">Logga set</button>
+        </div>
+        <div class="ex">
+          <div class="ex-top"><div class="ex-name">Squats</div><div class="ex-goal">10 × 3</div></div>
+          <div class="dots"><div class="dot filled">✓</div><div class="dot">2</div><div class="dot">3</div></div>
+          <button class="logbtn">Logga set</button>
+        </div>
+        <div class="streak"><div><small>Streak</small><br><b>5</b></div><div style="text-align:center"><small>Denna mån</small><br><b>11</b></div><div style="text-align:right"><small>Totalt</small><br><b>48</b></div></div>
+      </div>
+      <div class="tabbar"><div class="on"><b>●</b>Idag</div><div><b>▦</b>Kalender</div><div><b>📊</b>Statistik</div></div>
+    </div></div>
+
+    <div class="phone"><div class="screen t-data">
+      <div class="statusbar"><span>9:41</span><span>100%</span></div>
+      <div class="scr-body">
+        <div class="cal-top"><div class="m">Juni</div><div class="y">2026</div></div>
+        <div class="wk"><span>M</span><span>T</span><span>O</span><span>T</span><span>F</span><span>L</span><span>S</span></div>
+        <div class="grid" data-cal></div>
+        <div class="legend">
+          <div><i style="box-shadow:inset 0 0 0 1.5px #cdd9f5"></i> Planerad träningsdag</div>
+          <div><i style="background:#2f6df0"></i> Genomförd</div>
+          <div><i style="box-shadow:inset 0 0 0 1.5px #f3d2d2"></i> Missad</div>
+        </div>
+      </div>
+      <div class="tabbar"><div><b>●</b>Idag</div><div class="on"><b>▦</b>Kalender</div><div><b>📊</b>Statistik</div></div>
+    </div></div>
+  </div>
+</section>
+
+<div class="note">
+  <h3>Så funkar interaktionen i alla varianter</h3>
+  <ul>
+    <li><b>Logga ett set:</b> ett tryck fyller nästa ruta (✓). När alla 3 är fyllda är övningen klar för dagen.</li>
+    <li><b>Uppdelat över dagen:</b> du behöver inte göra allt på en gång — ta ett set när du har en lucka på jobbet.</li>
+    <li><b>Kalendern:</b> ring runt dagen = planerad träningsdag (varannan dag), fylld = klar, halvfylld = påbörjad, röd ring = missad, extra ring = idag.</li>
+    <li><b>Inställningar:</b> antal reps, antal set per dag och vilka dagar (varannan dag / valfria veckodagar) går att ändra.</li>
+  </ul>
+</div>
+
+<script>
+  function buildCalendar(el){
+    const year=2026, month=5;            // juni (0-indexerat)
+    const today=26;
+    const missed=[12];                   // en missad träningsdag för realism
+    const first=new Date(year,month,1);
+    const startWeekday=(first.getDay()+6)%7;   // måndag = 0
+    const daysInMonth=new Date(year,month+1,0).getDate();
+    let html='';
+    for(let i=0;i<startWeekday;i++) html+='<div class="cell"></div>';
+    for(let d=1;d<=daysInMonth;d++){
+      const scheduled = d%2===0;         // träning varannan dag (jämna datum)
+      let cls='cell';
+      if(scheduled) cls+=' scheduled';
+      if(scheduled && d<today && !missed.includes(d)) cls+=' done';
+      if(scheduled && missed.includes(d)) cls+=' missed';
+      if(d===today) cls+=' today partial';
+      html+=`<div class="${cls}"><span>${d}</span></div>`;
+    }
+    el.innerHTML=html;
+  }
+  document.querySelectorAll('[data-cal]').forEach(buildCalendar);
+</script>
+
+</body>
+</html>

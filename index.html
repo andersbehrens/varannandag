@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f08a3c">
+<title>Varannan dag</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+  :root{
+    --bg:#fbf3ea; --surface:#fffaf3; --text:#3a2f28; --muted:#b09c8c;
+    --accent:#f08a3c; --accent-soft:#fde4cf; --accent-ink:#c25e16; --on-accent:#fff;
+    --card-radius:22px; --card-border:1px solid #f1e4d4; --dot-bg:#f3e7d8;
+    --miss-ink:#c98a6a; --miss-ring:#f0cdbd; --sched-ring:#f0d8bd; --today-ring:#f08a3c;
+    --shadow:0 6px 20px -10px rgba(120,80,40,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--bg)}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text); line-height:1.5;
+    padding:max(18px,env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom));
+    max-width:480px; margin:0 auto;
+  }
+  h1{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700}
+
+  .app-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px}
+  .app-head .greet{font-size:26px;font-weight:800;letter-spacing:-.4px}
+  .app-head .date{font-size:13px;color:var(--muted);margin-top:2px}
+  .badge{font-size:12px;font-weight:800;padding:6px 13px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap}
+  .badge.rest{background:#eef0ee;color:#7e8a78}
+
+  .card{background:var(--surface);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+
+  .ex{padding:14px 0;border-bottom:1px solid #f1e4d4}
+  .ex:first-child{padding-top:0}
+  .ex:last-child{border-bottom:none;padding-bottom:0}
+  .ex-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+  .ex-name{font-weight:800;font-size:17px}
+  .ex-goal{font-size:12px;color:var(--muted)}
+  .dots{display:flex;gap:9px;margin-bottom:13px}
+  .dot{flex:1;height:38px;border-radius:999px;background:var(--dot-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--muted);transition:transform .12s ease,background .2s ease,color .2s ease}
+  .dot.filled{background:var(--accent);color:var(--on-accent)}
+  .dot.pop{transform:scale(1.12)}
+  .ex-actions{display:flex;align-items:center;gap:12px}
+  .logbtn{flex:1;border:none;padding:14px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:800;font-size:15px;cursor:pointer;font-family:inherit;transition:filter .15s ease,opacity .15s ease}
+  .logbtn:active{filter:brightness(.94)}
+  .logbtn.done{background:#e9f0e6;color:#5f7a55;cursor:default}
+  .undo{background:none;border:none;color:var(--muted);font-size:13px;font-family:inherit;cursor:pointer;padding:6px;text-decoration:underline;visibility:hidden}
+  .undo.show{visibility:visible}
+
+  .day-summary{margin-top:16px;display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:600}
+  .bar{height:10px;border-radius:999px;background:var(--dot-bg);overflow:hidden;margin-top:10px}
+  .bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .3s ease}
+  .day-done-msg{margin-top:12px;text-align:center;font-weight:700;color:var(--accent-ink);font-size:14px;display:none}
+  .day-done-msg.show{display:block}
+
+  /* calendar */
+  .cal-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .cal-top .m{font-size:19px;font-weight:800}
+  .cal-nav{background:var(--dot-bg);border:none;width:38px;height:38px;border-radius:12px;font-size:18px;color:var(--text);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center}
+  .cal-nav:active{filter:brightness(.95)}
+  .wk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:7px}
+  .wk span{text-align:center;font-size:11px;font-weight:800;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cell{aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:13px;position:relative;color:var(--muted);background:transparent;border:none;font-family:inherit;cursor:default;padding:0}
+  .cell.has{cursor:pointer}
+  .cell span{position:relative;z-index:2}
+  .cell.scheduled{color:var(--text);box-shadow:inset 0 0 0 1.5px var(--sched-ring)}
+  .cell.done{background:var(--accent);color:var(--on-accent);box-shadow:none;font-weight:800}
+  .cell.missed{color:var(--miss-ink);box-shadow:inset 0 0 0 1.5px var(--miss-ring)}
+  .cell.partial{box-shadow:inset 0 0 0 2px var(--accent);color:var(--text)}
+  .cell.partial::after{content:"";position:absolute;inset:0;border-radius:12px;background:var(--accent);clip-path:inset(50% 0 0 0);opacity:.92}
+  .cell.today span{font-weight:800}
+  .cell.today::before{content:"";position:absolute;inset:-3px;border-radius:15px;box-shadow:0 0 0 2px var(--today-ring)}
+  .cell.sel::before{content:"";position:absolute;inset:-3px;border-radius:15px;box-shadow:0 0 0 2px var(--text)}
+  .cal-detail{margin-top:14px;font-size:13px;color:var(--muted);min-height:20px;text-align:center}
+  .cal-detail b{color:var(--text)}
+
+  .legend{margin-top:14px;display:flex;flex-wrap:wrap;gap:10px 16px}
+  .legend div{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)}
+  .legend i{width:16px;height:16px;border-radius:6px;flex:0 0 auto}
+  .lg-sched{box-shadow:inset 0 0 0 1.5px var(--sched-ring)}
+  .lg-done{background:var(--accent)}
+  .lg-part{box-shadow:inset 0 0 0 2px var(--accent);background:linear-gradient(to top,var(--accent) 50%,transparent 50%)}
+  .lg-miss{box-shadow:inset 0 0 0 1.5px var(--miss-ring)}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center}
+  .stats .s b{display:block;font-size:24px;font-weight:800}
+  .stats .s small{font-size:11px;color:var(--muted)}
+
+  /* settings */
+  details.settings{border:var(--card-border);border-radius:var(--card-radius);background:var(--surface);box-shadow:var(--shadow);padding:0 18px;margin-bottom:16px}
+  details.settings summary{list-style:none;cursor:pointer;padding:16px 0;font-weight:800;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+  details.settings summary::-webkit-details-marker{display:none}
+  details.settings summary .chev{color:var(--muted);transition:transform .2s ease}
+  details.settings[open] summary .chev{transform:rotate(180deg)}
+  .set-body{padding:4px 0 18px;border-top:1px solid #f1e4d4}
+  .set-ex{margin-top:14px}
+  .set-ex h3{font-size:14px;margin-bottom:8px}
+  .set-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13px;color:var(--muted)}
+  .set-row label{flex:1}
+  .set-row input{width:74px;padding:9px 10px;border:1px solid #e9d9c6;border-radius:10px;font-size:15px;font-family:inherit;text-align:center;background:#fff;color:var(--text)}
+  .set-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.45}
+  .danger{margin-top:16px;width:100%;padding:11px;border-radius:999px;border:1px solid #f0cdbd;background:none;color:#c25e16;font-weight:700;font-family:inherit;font-size:13px;cursor:pointer}
+
+  .foot{text-align:center;font-size:11px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+
+  <div class="app-head">
+    <div>
+      <h1>Varannan dag</h1>
+      <div class="greet" id="greet">Hej! 👋</div>
+      <div class="date" id="today-date">—</div>
+    </div>
+    <div class="badge" id="dayBadge">Träningsdag</div>
+  </div>
+
+  <!-- DAGENS TRÄNING -->
+  <section class="card" id="dayCard"></section>
+
+  <!-- KALENDER -->
+  <section class="card">
+    <div class="cal-top">
+      <button class="cal-nav" id="calPrev" aria-label="Föregående månad">‹</button>
+      <div class="m" id="calMonth">—</div>
+      <button class="cal-nav" id="calNext" aria-label="Nästa månad">›</button>
+    </div>
+    <div class="wk"><span>M</span><span>T</span><span>O</span><span>T</span><span>F</span><span>L</span><span>S</span></div>
+    <div class="grid" id="calGrid"></div>
+    <div class="cal-detail" id="calDetail">Tryck på en dag för detaljer</div>
+    <div class="legend">
+      <div><i class="lg-sched"></i> Planerad</div>
+      <div><i class="lg-done"></i> Klar</div>
+      <div><i class="lg-part"></i> Påbörjad</div>
+      <div><i class="lg-miss"></i> Missad</div>
+    </div>
+  </section>
+
+  <!-- STATISTIK -->
+  <section class="card stats">
+    <div class="s"><b id="statStreak">0</b><small>dagar i rad 🔥</small></div>
+    <div class="s"><b id="statMonth">0</b><small>klara denna månad</small></div>
+    <div class="s"><b id="statTotal">0</b><small>klara totalt</small></div>
+  </section>
+
+  <!-- INSTÄLLNINGAR -->
+  <details class="settings">
+    <summary>Inställningar <span class="chev">▾</span></summary>
+    <div class="set-body" id="setBody"></div>
+  </details>
+
+  <div class="foot">Sparas lokalt på den här enheten · Varannan dag</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- "Idag": riktig dag, eller ?today=YYYY-MM-DD för test ----
+  function realTodayStr(){
+    const p = new URLSearchParams(location.search).get('today');
+    if(p && /^\d{4}-\d{2}-\d{2}$/.test(p)) return p;
+    const d = new Date();
+    return ymd(d);
+  }
+  function ymd(d){
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function parseYMD(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+  function dayDiff(a,b){ // hela dagar b - a (sträng-YMD), tidszonssäkert
+    const [ay,am,ad]=a.split('-').map(Number), [by,bm,bd]=b.split('-').map(Number);
+    return Math.round((Date.UTC(by,bm-1,bd)-Date.UTC(ay,am-1,ad))/86400000);
+  }
+  const MONTHS=['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
+  const WEEKDAYS=['söndag','måndag','tisdag','onsdag','torsdag','fredag','lördag'];
+
+  const TODAY = realTodayStr();
+  const STORE_KEY = 'varannandag.v1';
+
+  // ---- Standardinställningar (datan är versionerad för framtida utbyggnad) ----
+  function defaults(){
+    return {
+      version:1,
+      settings:{
+        startDate: TODAY,                 // ankardag för "varannan dag"
+        schedule:'everyOtherDay',
+        exercises:[
+          {id:'pushups', name:'Armhävningar', reps:10, sets:3},
+          {id:'squats',  name:'Squats',       reps:10, sets:3}
+        ]
+      },
+      log:{}   // { "YYYY-MM-DD": { pushups:2, squats:1 } }
+    };
+  }
+
+  function load(){
+    let s;
+    try{ s = JSON.parse(localStorage.getItem(STORE_KEY)); }catch(e){ s=null; }
+    if(!s || s.version!==1){ s = defaults(); save(s); }
+    // framtidssäkring: behåll gammal logg även om övningar ändras
+    if(!s.log) s.log={};
+    if(!s.settings) s.settings = defaults().settings;
+    return s;
+  }
+  function save(s){ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+
+  let state = load();
+  let viewYear, viewMonth, selected=null;
+  (function(){ const d=parseYMD(TODAY); viewYear=d.getFullYear(); viewMonth=d.getMonth(); })();
+
+  // ---- logik ----
+  function isTrainingDay(dateStr){
+    const start = state.settings.startDate;
+    if(dateStr < start) return false;
+    return dayDiff(start, dateStr) % 2 === 0;
+  }
+  function logFor(dateStr){ return state.log[dateStr] || {}; }
+  function setsDone(dateStr, exId){ return (logFor(dateStr)[exId]) || 0; }
+  function exTarget(ex){ return ex.sets; }
+  function totalTarget(){ return state.settings.exercises.reduce((a,e)=>a+exTarget(e),0); }
+  function totalDone(dateStr){
+    return state.settings.exercises.reduce((a,e)=>a+Math.min(setsDone(dateStr,e.id),exTarget(e)),0);
+  }
+  function anyProgress(dateStr){
+    const l = logFor(dateStr);
+    return Object.values(l).some(v=>v>0);
+  }
+  function isComplete(dateStr){
+    return state.settings.exercises.every(e=>setsDone(dateStr,e.id) >= exTarget(e));
+  }
+
+  function logSet(exId){
+    const ex = state.settings.exercises.find(e=>e.id===exId);
+    if(!ex) return;
+    const cur = setsDone(TODAY, exId);
+    if(cur >= exTarget(ex)) return;
+    if(!state.log[TODAY]) state.log[TODAY]={};
+    state.log[TODAY][exId] = cur+1;
+    save(state);
+    renderDay(true, exId);
+    renderCalendar();
+    renderStats();
+  }
+  function undoSet(exId){
+    const cur = setsDone(TODAY, exId);
+    if(cur<=0) return;
+    state.log[TODAY][exId] = cur-1;
+    if(state.log[TODAY][exId]===0) delete state.log[TODAY][exId];
+    if(Object.keys(state.log[TODAY]||{}).length===0) delete state.log[TODAY];
+    save(state);
+    renderDay(false, exId);
+    renderCalendar();
+    renderStats();
+  }
+
+  // ---- rendering: dagens träning ----
+  function renderDay(animateExId){
+    const card = document.getElementById('dayCard');
+    const training = isTrainingDay(TODAY);
+    // header
+    const d = parseYMD(TODAY);
+    document.getElementById('today-date').textContent =
+      WEEKDAYS[d.getDay()].replace(/^./,c=>c.toUpperCase()) + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+    const badge = document.getElementById('dayBadge');
+    if(training){ badge.textContent='Träningsdag'; badge.className='badge'; }
+    else{ badge.textContent='Vilodag'; badge.className='badge rest'; }
+
+    let html='';
+    state.settings.exercises.forEach(ex=>{
+      const done = setsDone(TODAY, ex.id);
+      const target = exTarget(ex);
+      let dots='';
+      for(let i=0;i<target;i++){
+        const filled = i<done ? ' filled':'';
+        const pop = (animateExId===ex.id && i===done-1) ? ' pop':'';
+        dots += `<div class="dot${filled}${pop}">${filled?'✓':(i+1)}</div>`;
+      }
+      const complete = done>=target;
+      html += `
+        <div class="ex">
+          <div class="ex-top"><div class="ex-name">${ex.name}</div><div class="ex-goal">${ex.reps} × ${target} set</div></div>
+          <div class="dots" id="dots-${ex.id}">${dots}</div>
+          <div class="ex-actions">
+            <button class="logbtn${complete?' done':''}" id="log-${ex.id}" ${complete?'disabled':''}>${complete?'✓ Klart för idag':'Klarade ett set!'}</button>
+            <button class="undo${done>0?' show':''}" id="undo-${ex.id}">Ångra</button>
+          </div>
+        </div>`;
+    });
+    const tDone = totalDone(TODAY), tTot = totalTarget();
+    const pct = tTot? Math.round(tDone/tTot*100):0;
+    html += `
+      <div class="day-summary"><span>Dagens framsteg</span><b id="dayProgress">${tDone} / ${tTot} set</b></div>
+      <div class="bar"><i id="dayBar" style="width:${pct}%"></i></div>
+      <div class="day-done-msg${isComplete(TODAY)?' show':''}" id="dayDoneMsg">🎉 Dagens träning klar – bra jobbat!</div>`;
+    card.innerHTML = html;
+
+    state.settings.exercises.forEach(ex=>{
+      document.getElementById('log-'+ex.id).addEventListener('click', ()=>logSet(ex.id));
+      document.getElementById('undo-'+ex.id).addEventListener('click', ()=>undoSet(ex.id));
+    });
+    // ta bort pop-klassen efter animationen
+    if(animateExId){
+      const el = document.querySelector('#dots-'+animateExId+' .pop');
+      if(el) setTimeout(()=>el.classList.remove('pop'),140);
+    }
+  }
+
+  // ---- rendering: kalender ----
+  function dayState(dateStr){
+    if(isComplete(dateStr)) return 'done';
+    if(anyProgress(dateStr)) return 'partial';
+    if(isTrainingDay(dateStr) && dateStr < TODAY) return 'missed';
+    if(isTrainingDay(dateStr)) return 'scheduled';
+    return 'none';
+  }
+  function renderCalendar(){
+    document.getElementById('calMonth').textContent =
+      MONTHS[viewMonth].replace(/^./,c=>c.toUpperCase()) + ' ' + viewYear;
+    const first = new Date(viewYear, viewMonth, 1);
+    const startWeekday = (first.getDay()+6)%7;
+    const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+    let html='';
+    for(let i=0;i<startWeekday;i++) html += '<div class="cell"></div>';
+    for(let d=1; d<=daysInMonth; d++){
+      const dateStr = viewYear+'-'+String(viewMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const st = dayState(dateStr);
+      let cls='cell';
+      if(st!=='none') cls+=' '+st;
+      if(st==='done'||st==='partial'||st==='missed'||st==='scheduled') cls+=' has';
+      if(dateStr===TODAY) cls+=' today has';
+      if(dateStr===selected) cls+=' sel';
+      html += `<button class="${cls}" data-date="${dateStr}"><span>${d}</span></button>`;
+    }
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = html;
+    grid.querySelectorAll('button[data-date]').forEach(b=>{
+      b.addEventListener('click', ()=>showDetail(b.dataset.date));
+    });
+  }
+  function showDetail(dateStr){
+    selected = dateStr;
+    renderCalendar();
+    const d = parseYMD(dateStr);
+    const head = d.getDate()+' '+MONTHS[d.getMonth()];
+    const parts = state.settings.exercises.map(e=>`${e.name} ${setsDone(dateStr,e.id)}/${exTarget(e)}`);
+    const st = dayState(dateStr);
+    const tag = st==='done'?' ✓ klar':st==='missed'?' · missad':st==='partial'?' · påbörjad':isTrainingDay(dateStr)?' · planerad':' · vilodag';
+    const detail = document.getElementById('calDetail');
+    if(st==='none' && !anyProgress(dateStr)){
+      detail.innerHTML = `<b>${head}</b>${tag}`;
+    }else{
+      detail.innerHTML = `<b>${head}</b>${tag} — ${parts.join(', ')}`;
+    }
+  }
+
+  // ---- rendering: statistik (för visad månad) ----
+  function renderStats(){
+    let monthCount=0;
+    const dim = new Date(viewYear, viewMonth+1, 0).getDate();
+    for(let d=1; d<=dim; d++){
+      const ds = viewYear+'-'+String(viewMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      if(isComplete(ds)) monthCount++;
+    }
+    let total=0;
+    for(const ds in state.log){ if(isComplete(ds)) total++; }
+    // streak: sammanhängande klara träningsdagar bakåt; ofärdig idag bryter inte
+    let streak=0;
+    let cur = new Date(parseYMD(TODAY));
+    for(let i=0;i<800;i++){
+      const ds = ymd(cur);
+      if(isTrainingDay(ds)){
+        if(isComplete(ds)) streak++;
+        else if(ds===TODAY){ /* hoppa över ofärdig idag */ }
+        else break;
+      }
+      cur.setDate(cur.getDate()-1);
+      if(ds < state.settings.startDate) break;
+    }
+    document.getElementById('statStreak').textContent = streak;
+    document.getElementById('statMonth').textContent = monthCount;
+    document.getElementById('statTotal').textContent = total;
+  }
+
+  // ---- rendering: inställningar ----
+  function renderSettings(){
+    const body = document.getElementById('setBody');
+    let html='';
+    state.settings.exercises.forEach(ex=>{
+      html += `
+        <div class="set-ex">
+          <h3>${ex.name}</h3>
+          <div class="set-row"><label>Antal (reps) per set</label><input type="number" min="1" max="100" id="cfg-${ex.id}-reps" value="${ex.reps}"></div>
+          <div class="set-row"><label>Antal set per dag</label><input type="number" min="1" max="10" id="cfg-${ex.id}-sets" value="${ex.sets}"></div>
+        </div>`;
+    });
+    html += `<p class="set-note">Träningen är inställd på <b>varannan dag</b>. Ändringar gäller från och med idag – din tidigare historik sparas.</p>`;
+    html += `<button class="danger" id="resetBtn">Nollställ all data</button>`;
+    body.innerHTML = html;
+
+    state.settings.exercises.forEach(ex=>{
+      ['reps','sets'].forEach(k=>{
+        const inp = document.getElementById(`cfg-${ex.id}-${k}`);
+        inp.addEventListener('change', ()=>{
+          let v = parseInt(inp.value,10);
+          if(isNaN(v)||v<1) v=1;
+          if(k==='sets' && v>10) v=10;
+          if(k==='reps' && v>100) v=100;
+          inp.value=v;
+          ex[k]=v;
+          save(state);
+          renderDay(); renderCalendar(); renderStats();
+        });
+      });
+    });
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      if(confirm('Nollställa all träningsdata? Detta går inte att ångra.')){
+        state = defaults();
+        save(state);
+        renderAll();
+      }
+    });
+  }
+
+  function renderAll(){ renderDay(); renderCalendar(); renderStats(); renderSettings(); }
+
+  // ---- event ----
+  document.getElementById('calPrev').addEventListener('click', ()=>{
+    viewMonth--; if(viewMonth<0){viewMonth=11;viewYear--;} renderCalendar(); renderStats();
+  });
+  document.getElementById('calNext').addEventListener('click', ()=>{
+    viewMonth++; if(viewMonth>11){viewMonth=0;viewYear++;} renderCalendar(); renderStats();
+  });
+
+  renderAll();
+
+  // test-krok
+  window.__state = ()=>state;
+
+  // service worker
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+  }
+})();
+</script>
+</body>
+</html>

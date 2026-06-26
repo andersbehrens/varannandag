@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#f08a3c"/>
+  <!-- skivstång / hantel -->
+  <g fill="none" stroke="#fffaf3" stroke-width="34" stroke-linecap="round">
+    <line x1="150" y1="256" x2="362" y2="256"/>
+  </g>
+  <g fill="#fffaf3">
+    <rect x="96"  y="196" width="40" height="120" rx="16"/>
+    <rect x="146" y="216" width="34" height="80"  rx="14"/>
+    <rect x="332" y="216" width="34" height="80"  rx="14"/>
+    <rect x="376" y="196" width="40" height="120" rx="16"/>
+  </g>
+  <!-- bock -->
+  <path d="M214 372 l34 34 l66 -78" fill="none" stroke="#fde4cf" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
