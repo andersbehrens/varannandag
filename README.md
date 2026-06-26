@@ -5,10 +5,12 @@ ett set i taget, när du hinner. Tryck på en knapp varje gång du gjort ett set
 i kalendern hur du skött träningen månad för månad.
 
 - **Mål från start:** 10 armhävningar × 3 set och 10 squats × 3 set, varannan dag.
+- **Bonus:** logga fria aktiviteter (löprunda 🏃, cyklat till jobbet 🚲) valfri dag – de
+  räknas inte mot träningsmålet men syns som färgade prickar i kalendern.
 - **Allt sparas lokalt** på enheten (localStorage) – ingen inloggning, inget moln.
 - **Inställningar:** ändra antal reps och antal set per dag. Historiken sparas.
-- **Kalender:** ring = planerad dag, fylld = klar, halv = påbörjad, röd = missad. Bläddra
-  mellan månader för att se hela historiken.
+- **Kalender:** ring = planerad dag, fylld = klar, halv = påbörjad, röd = missad, blå/grön
+  prick = bonus. Bläddra mellan månader för att se hela historiken.
 
 ## Lägg till på hemskärmen (iPhone)
 Öppna sidan i Safari → dela-knappen → **Lägg till på hemskärmen**. Då startar den som en app.

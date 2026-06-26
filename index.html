@@ -13,6 +13,7 @@
     --accent:#f08a3c; --accent-soft:#fde4cf; --accent-ink:#c25e16; --on-accent:#fff;
     --card-radius:22px; --card-border:1px solid #f1e4d4; --dot-bg:#f3e7d8;
     --miss-ink:#c98a6a; --miss-ring:#f0cdbd; --sched-ring:#f0d8bd; --today-ring:#f08a3c;
+    --bonus-run:#3f86b0; --bonus-bike:#5f9e63;
     --shadow:0 6px 20px -10px rgba(120,80,40,.35);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -85,6 +86,26 @@
   .lg-done{background:var(--accent)}
   .lg-part{box-shadow:inset 0 0 0 2px var(--accent);background:linear-gradient(to top,var(--accent) 50%,transparent 50%)}
   .lg-miss{box-shadow:inset 0 0 0 1.5px var(--miss-ring)}
+  .lg-run{background:var(--bonus-run);border-radius:999px}
+  .lg-bike{background:var(--bonus-bike);border-radius:999px}
+
+  /* bonus */
+  .bonus-head{margin-bottom:14px}
+  .bonus-title{font-weight:800;font-size:17px}
+  .bonus-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .bonus-row{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+  .bonus-row:last-child{margin-bottom:0}
+  .bonusbtn{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1.5px solid var(--accent-soft);background:var(--surface);color:var(--text);padding:13px 16px;border-radius:999px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;transition:background .15s ease,border-color .15s ease}
+  .bonusbtn:active{filter:brightness(.97)}
+  .bonusbtn.active{background:var(--accent-soft);border-color:var(--accent)}
+  .bonusbtn .bcount{background:var(--accent);color:var(--on-accent);min-width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;padding:0 7px}
+
+  /* bonus-prickar i kalendern */
+  .bdots{position:absolute;left:0;right:0;bottom:4px;display:flex;justify-content:center;gap:3px;z-index:3}
+  .bdot{width:5px;height:5px;border-radius:999px}
+  .bdot-run{background:var(--bonus-run)}
+  .bdot-bike{background:var(--bonus-bike)}
+  .cell.done .bdot{box-shadow:0 0 0 1px rgba(255,255,255,.9)}
 
   /* stats */
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center}
@@ -123,6 +144,9 @@
   <!-- DAGENS TRÄNING -->
   <section class="card" id="dayCard"></section>
 
+  <!-- BONUS -->
+  <section class="card" id="bonusCard"></section>
+
   <!-- KALENDER -->
   <section class="card">
     <div class="cal-top">
@@ -138,6 +162,8 @@
       <div><i class="lg-done"></i> Klar</div>
       <div><i class="lg-part"></i> Påbörjad</div>
       <div><i class="lg-miss"></i> Missad</div>
+      <div><i class="lg-run"></i> Löprunda</div>
+      <div><i class="lg-bike"></i> Cyklat</div>
     </div>
   </section>
 
@@ -182,28 +208,46 @@
   const STORE_KEY = 'varannandag.v1';
 
   // ---- Standardinställningar (datan är versionerad för framtida utbyggnad) ----
+  function defaultBonus(){
+    return [
+      {id:'run',  name:'Löprunda',           emoji:'🏃'},
+      {id:'bike', name:'Cyklat till jobbet', emoji:'🚲'}
+    ];
+  }
   function defaults(){
     return {
-      version:1,
+      version:2,
       settings:{
         startDate: TODAY,                 // ankardag för "varannan dag"
         schedule:'everyOtherDay',
         exercises:[
           {id:'pushups', name:'Armhävningar', reps:10, sets:3},
           {id:'squats',  name:'Squats',       reps:10, sets:3}
-        ]
+        ],
+        bonus: defaultBonus()             // fria bonusaktiviteter (ej styrda)
       },
-      log:{}   // { "YYYY-MM-DD": { pushups:2, squats:1 } }
+      log:{},        // { "YYYY-MM-DD": { pushups:2, squats:1 } }  styrda set
+      bonusLog:{}    // { "YYYY-MM-DD": { run:1, bike:2 } }        bonus, fristående
     };
   }
 
   function load(){
     let s;
     try{ s = JSON.parse(localStorage.getItem(STORE_KEY)); }catch(e){ s=null; }
-    if(!s || s.version!==1){ s = defaults(); save(s); }
-    // framtidssäkring: behåll gammal logg även om övningar ändras
+    if(!s){ s = defaults(); save(s); return s; }
+    // migrering v1 -> v2: behåll all befintlig data, lägg bara till bonus
+    if(s.version === 1){
+      if(!s.settings) s.settings = defaults().settings;
+      s.settings.bonus = s.settings.bonus || defaultBonus();
+      s.bonusLog = s.bonusLog || {};
+      s.version = 2;
+      save(s);
+    }
+    // framtidssäkring: fyll i saknade fält utan att röra historiken
     if(!s.log) s.log={};
+    if(!s.bonusLog) s.bonusLog={};
     if(!s.settings) s.settings = defaults().settings;
+    if(!s.settings.bonus) s.settings.bonus = defaultBonus();
     return s;
   }
   function save(s){ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
@@ -255,6 +299,29 @@
     renderDay(false, exId);
     renderCalendar();
     renderStats();
+  }
+
+  // ---- bonus (fristående aktiviteter) ----
+  function bonusFor(dateStr){ return state.bonusLog[dateStr] || {}; }
+  function bonusCount(dateStr, bId){ return (bonusFor(dateStr)[bId]) || 0; }
+  function hasBonus(dateStr){ return Object.values(bonusFor(dateStr)).some(v=>v>0); }
+
+  function logBonus(bId){
+    if(!state.bonusLog[TODAY]) state.bonusLog[TODAY]={};
+    state.bonusLog[TODAY][bId] = bonusCount(TODAY, bId)+1;
+    save(state);
+    renderBonus();
+    renderCalendar();
+  }
+  function undoBonus(bId){
+    const cur = bonusCount(TODAY, bId);
+    if(cur<=0) return;
+    state.bonusLog[TODAY][bId] = cur-1;
+    if(state.bonusLog[TODAY][bId]===0) delete state.bonusLog[TODAY][bId];
+    if(Object.keys(state.bonusLog[TODAY]||{}).length===0) delete state.bonusLog[TODAY];
+    save(state);
+    renderBonus();
+    renderCalendar();
   }
 
   // ---- rendering: dagens träning ----
@@ -309,6 +376,27 @@
     }
   }
 
+  // ---- rendering: bonus ----
+  function renderBonus(){
+    const card = document.getElementById('bonusCard');
+    let rows='';
+    state.settings.bonus.forEach(b=>{
+      const n = bonusCount(TODAY, b.id);
+      rows += `
+        <div class="bonus-row">
+          <button class="bonusbtn${n>0?' active':''}" id="bonus-${b.id}"><span>${b.emoji} ${b.name}</span>${n>0?`<b class="bcount">${n}</b>`:''}</button>
+          <button class="undo${n>0?' show':''}" id="bonusundo-${b.id}">Ångra</button>
+        </div>`;
+    });
+    card.innerHTML = `
+      <div class="bonus-head"><div class="bonus-title">Bonus</div><div class="bonus-sub">Extra rörelse – logga när du hinner (räknas inte mot träningsmålet)</div></div>
+      ${rows}`;
+    state.settings.bonus.forEach(b=>{
+      document.getElementById('bonus-'+b.id).addEventListener('click', ()=>logBonus(b.id));
+      document.getElementById('bonusundo-'+b.id).addEventListener('click', ()=>undoBonus(b.id));
+    });
+  }
+
   // ---- rendering: kalender ----
   function dayState(dateStr){
     if(isComplete(dateStr)) return 'done';
@@ -328,12 +416,15 @@
     for(let d=1; d<=daysInMonth; d++){
       const dateStr = viewYear+'-'+String(viewMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
       const st = dayState(dateStr);
+      let bdots='';
+      state.settings.bonus.forEach(b=>{ if(bonusCount(dateStr,b.id)>0) bdots += `<i class="bdot bdot-${b.id}"></i>`; });
       let cls='cell';
       if(st!=='none') cls+=' '+st;
       if(st==='done'||st==='partial'||st==='missed'||st==='scheduled') cls+=' has';
+      if(bdots) cls+=' has';
       if(dateStr===TODAY) cls+=' today has';
       if(dateStr===selected) cls+=' sel';
-      html += `<button class="${cls}" data-date="${dateStr}"><span>${d}</span></button>`;
+      html += `<button class="${cls}" data-date="${dateStr}"><span>${d}</span>${bdots?`<div class="bdots">${bdots}</div>`:''}</button>`;
     }
     const grid = document.getElementById('calGrid');
     grid.innerHTML = html;
@@ -347,14 +438,13 @@
     const d = parseYMD(dateStr);
     const head = d.getDate()+' '+MONTHS[d.getMonth()];
     const parts = state.settings.exercises.map(e=>`${e.name} ${setsDone(dateStr,e.id)}/${exTarget(e)}`);
+    const bonusParts = state.settings.bonus.filter(b=>bonusCount(dateStr,b.id)>0).map(b=>`${b.emoji} ${bonusCount(dateStr,b.id)}`);
     const st = dayState(dateStr);
     const tag = st==='done'?' ✓ klar':st==='missed'?' · missad':st==='partial'?' · påbörjad':isTrainingDay(dateStr)?' · planerad':' · vilodag';
-    const detail = document.getElementById('calDetail');
-    if(st==='none' && !anyProgress(dateStr)){
-      detail.innerHTML = `<b>${head}</b>${tag}`;
-    }else{
-      detail.innerHTML = `<b>${head}</b>${tag} — ${parts.join(', ')}`;
-    }
+    const segs = [];
+    if(st!=='none') segs.push(parts.join(', '));
+    if(bonusParts.length) segs.push('Bonus: '+bonusParts.join('  '));
+    document.getElementById('calDetail').innerHTML = `<b>${head}</b>${tag}${segs.length?' — '+segs.join('  ·  '):''}`;
   }
 
   // ---- rendering: statistik (för visad månad) ----
@@ -425,7 +515,7 @@
     });
   }
 
-  function renderAll(){ renderDay(); renderCalendar(); renderStats(); renderSettings(); }
+  function renderAll(){ renderDay(); renderBonus(); renderCalendar(); renderStats(); renderSettings(); }
 
   // ---- event ----
   document.getElementById('calPrev').addEventListener('click', ()=>{

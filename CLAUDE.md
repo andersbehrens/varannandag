@@ -27,27 +27,37 @@ scripts/
 ```
 
 ## Datamodell (localStorage, versionerad för framtida utbyggnad)
-Nyckel `varannandag.v1`:
+Nyckel `varannandag.v1` (nyckelnamnet behålls; `version`-fältet styr schemat). **Schema v2:**
 ```jsonc
 {
-  "version": 1,
+  "version": 2,
   "settings": {
     "startDate": "2026-06-26",      // ankardag för "varannan dag"-rytmen
     "schedule": "everyOtherDay",
-    "exercises": [
+    "exercises": [                  // STYRDA övningar (mål, räknas i statistik)
       { "id": "pushups", "name": "Armhävningar", "reps": 10, "sets": 3 },
       { "id": "squats",  "name": "Squats",       "reps": 10, "sets": 3 }
+    ],
+    "bonus": [                      // FRIA bonusaktiviteter (inget mål, egen logg)
+      { "id": "run",  "name": "Löprunda",           "emoji": "🏃" },
+      { "id": "bike", "name": "Cyklat till jobbet", "emoji": "🚲" }
     ]
   },
-  "log": { "2026-06-26": { "pushups": 2, "squats": 1 } }   // antal KLARA set per övning per dag
+  "log":      { "2026-06-26": { "pushups": 2, "squats": 1 } },  // KLARA set per övning per dag
+  "bonusLog": { "2026-06-26": { "bike": 1 } }                   // antal bonus-tillfällen per dag
 }
 ```
 - **En dag är träningsdag** om `date >= startDate` och `dagdiff(startDate, date) % 2 === 0`.
 - **Klar** = alla övningar nått sitt `sets`-mål. **Påbörjad** = någon progress men ej klar.
   **Missad** = träningsdag i det förflutna utan att ha blivit klar.
-- **Framtidssäkring:** loggen är per datum + övnings-id, så gammal historik finns kvar även om
-  man lägger till nya övningar eller ändrar mål. Höj `version` + migrera i `load()` vid schemaändring.
+- **Bonus är helt fristående** (`bonusLog`): påverkar INTE klar/streak/statistik. Visas som
+  färgade prickar i kalendern (blå=run, grön=bike) och kan loggas valfri dag, även vilodag.
+- **Migrering:** `load()` uppgraderar v1→v2 utan att radera något (lägger bara till `settings.bonus`
+  + `bonusLog`). **Radera ALDRIG användardata vid schemabyte** – migrera, höj `version`, fyll i fält.
+- **Framtidssäkring:** loggarna är per datum + id, så historik finns kvar även om man lägger till
+  nya övningar/bonusaktiviteter.
 - **Idag** läses från `?today=YYYY-MM-DD` om satt (för deterministiska test), annars riktig dag.
+- **Bumpa `sw.js` `CACHE_NAME`** (nu `varannandag-v2`) vid ändring av `index.html`/ikoner.
 
 ## Kör lokalt
 ```sh
@@ -58,10 +68,11 @@ python3 -m http.server 8770    # öppna http://localhost:8770
 ```sh
 node scripts/check-app.mjs http://localhost:8770/index.html
 ```
-Laddar appen i riktig (headless) Chrome via CDP och testar flera knapptryck: dots fylls,
-dagen blir klar, tak + Ångra, persistens efter omladdning, seedad historik (done/partial/missed),
-månadsbläddring och att layouten inte spiller över på 320–360px. Avslutar med kod 1 vid fel.
-Kräver Google Chrome.
+Laddar appen i riktig (headless) Chrome via CDP och testar flera knapptryck (45 kontroller):
+dots fylls, dagen blir klar, tak + Ångra, bonusloggning + bonusprickar i kalendern,
+persistens efter omladdning, **migrering v1→v2 utan dataförlust**, seedad historik
+(done/partial/missed), månadsbläddring och att layouten inte spiller över på 320–360px.
+Avslutar med kod 1 vid fel. Kräver Google Chrome.
 
 ### Regenerera ikoner (om icon.svg ändras)
 ```sh

@@ -73,6 +73,18 @@ add('Framstegsstapel 100%', (await evx(`document.getElementById('dayBar').style.
 add('Kalender: idag markerad som klar', (await evx(`document.querySelector('.cell.today').classList.contains('done')`)) === true);
 add('Streak = 1', (await evx(`document.getElementById('statStreak').textContent`)) === '1');
 
+// ---------- A2) Bonus (löprunda + cykling) ----------
+await click('bonus-run'); await sleep(30);
+await click('bonus-bike'); await click('bonus-bike'); await sleep(30);
+add('Bonus: löprunda räknare = 1', (await evx(`document.querySelector('#bonus-run .bcount')?.textContent`)) === '1');
+add('Bonus: cykel räknare = 2', (await evx(`document.querySelector('#bonus-bike .bcount')?.textContent`)) === '2');
+add('Bonus: löprunda-knapp aktiv', (await evx(`document.getElementById('bonus-run').classList.contains('active')`)) === true);
+add('Kalender: idag har löpprick', (await evx(`!!document.querySelector('.cell.today .bdot-run')`)) === true);
+add('Kalender: idag har cykelprick', (await evx(`!!document.querySelector('.cell.today .bdot-bike')`)) === true);
+add('Bonus räknas EJ mot dagens set (kvar 6/6)', (await evx(`document.getElementById('dayProgress').textContent`)).trim() === '6 / 6 set');
+await click('bonusundo-bike'); await sleep(30);
+add('Bonus: ångra cykel → 1', (await evx(`document.querySelector('#bonus-bike .bcount')?.textContent`)) === '1');
+
 // ---------- B) Tak + Ångra ----------
 for (let i = 0; i < 4; i++) { await click('log-pushups'); await sleep(20); }
 add('Tak: extra tryck räknas inte (kvar 3)', (await evx(`document.querySelectorAll('#dots-pushups .filled').length`)) === 3);
@@ -86,13 +98,30 @@ add('Kalender: idag nu påbörjad', (await evx(`document.querySelector('.cell.to
 await nav(URL); // ladda om utan att rensa
 add('Persistens: 5 / 6 set kvar efter omladdning', (await evx(`document.getElementById('dayProgress').textContent`)).trim() === '5 / 6 set');
 add('Persistens: armhävningar 2 fyllda kvar', (await evx(`document.querySelectorAll('#dots-pushups .filled').length`)) === 2);
+add('Persistens: bonus löprunda 1 kvar', (await evx(`document.querySelector('#bonus-run .bcount')?.textContent`)) === '1');
+add('Persistens: bonus cykel 1 kvar', (await evx(`document.querySelector('#bonus-bike .bcount')?.textContent`)) === '1');
 
-// ---------- D) Historik + kalenderbläddring ----------
-const seed = {
+// ---------- D) Migrering v1 -> v2 (befintlig data får INTE raderas) ----------
+const seedV1 = {
   version: 1,
   settings: { startDate: '2026-06-01', schedule: 'everyOtherDay',
     exercises: [ { id: 'pushups', name: 'Armhävningar', reps: 10, sets: 3 }, { id: 'squats', name: 'Squats', reps: 10, sets: 3 } ] },
   log: { '2026-06-01': { pushups: 3, squats: 3 }, '2026-06-03': { pushups: 3, squats: 3 }, '2026-06-05': { pushups: 1 } }
+};
+await evx(`localStorage.setItem('varannandag.v1', ${JSON.stringify(JSON.stringify(seedV1))})`);
+await nav(URL);
+add('Migrering: gammal historik bevaras (01 juni klar)', (await evx(`(document.querySelector('.cell[data-date="2026-06-01"]')||{className:''}).className`)).includes('done'));
+add('Migrering: data uppgraderad till version 2', (await evx(`JSON.parse(localStorage.getItem('varannandag.v1')).version`)) === 2);
+add('Migrering: bonusLog skapad', (await evx(`typeof JSON.parse(localStorage.getItem('varannandag.v1')).bonusLog`)) === 'object');
+
+// ---------- E) Historik, bonus i kalender + bläddring ----------
+const seed = {
+  version: 2,
+  settings: { startDate: '2026-06-01', schedule: 'everyOtherDay',
+    exercises: [ { id: 'pushups', name: 'Armhävningar', reps: 10, sets: 3 }, { id: 'squats', name: 'Squats', reps: 10, sets: 3 } ],
+    bonus: [ { id: 'run', name: 'Löprunda', emoji: '🏃' }, { id: 'bike', name: 'Cyklat till jobbet', emoji: '🚲' } ] },
+  log: { '2026-06-01': { pushups: 3, squats: 3 }, '2026-06-03': { pushups: 3, squats: 3 }, '2026-06-05': { pushups: 1 } },
+  bonusLog: { '2026-06-02': { bike: 1 }, '2026-06-09': { run: 1, bike: 2 } }
 };
 await evx(`localStorage.setItem('varannandag.v1', ${JSON.stringify(JSON.stringify(seed))})`);
 await nav(URL);
@@ -100,7 +129,10 @@ const cellCls = (d) => evx(`(document.querySelector('.cell[data-date="2026-06-${
 add('Historik: 01 juni = klar (done)', (await cellCls('01')).includes('done'));
 add('Historik: 05 juni = påbörjad (partial)', (await cellCls('05')).includes('partial'));
 add('Historik: 07 juni = missad (missed)', (await cellCls('07')).includes('missed'));
-add('Historik: 02 juni = vilodag (ej markerad)', !/\b(done|partial|missed|scheduled)\b/.test(await cellCls('02')));
+add('Historik: 02 juni = ej tränings-markerad', !/\b(done|partial|missed|scheduled)\b/.test(await cellCls('02')));
+add('Bonus i kalender: 02 juni (vilodag) har cykelprick', (await evx(`!!document.querySelector('.cell[data-date="2026-06-02"] .bdot-bike')`)) === true);
+add('Bonus i kalender: 02 juni klickbar (has)', (await cellCls('02')).includes('has'));
+add('Bonus i kalender: 09 juni har löpprick + cykelprick', (await evx(`!!document.querySelector('.cell[data-date="2026-06-09"] .bdot-run') && !!document.querySelector('.cell[data-date="2026-06-09"] .bdot-bike')`)) === true);
 
 add('Kalender visar Juni 2026', (await evx(`document.getElementById('calMonth').textContent`)).includes('Juni 2026'));
 await click('calPrev'); await sleep(40);
@@ -114,8 +146,10 @@ await click('calNext'); // tillbaka? nej -> aug; gå tillbaka till juni
 await nav(URL);
 await evx(`document.querySelector('.cell[data-date="2026-06-01"]').click()`); await sleep(40);
 add('Klick på dag visar detaljrad', /Armhävningar 3\/3/.test(await evx(`document.getElementById('calDetail').textContent`)));
+await evx(`document.querySelector('.cell[data-date="2026-06-09"]').click()`); await sleep(40);
+add('Detaljrad visar bonus', /Bonus/.test(await evx(`document.getElementById('calDetail').textContent`)));
 
-// ---------- E) Layout: ingen horisontell overflow ----------
+// ---------- F) Layout: ingen horisontell overflow ----------
 for (const w of [320, 360]) {
   await cdp('Emulation.setDeviceMetricsOverride', { width: w, height: 800, deviceScaleFactor: 1, mobile: true });
   await nav(URL);

@@ -1,6 +1,6 @@
 // Service worker – "Varannan dag"
 // Bumpa CACHE_NAME (vN) när index.html/manifest/ikoner ändras.
-const CACHE_NAME = 'varannandag-v1';
+const CACHE_NAME = 'varannandag-v2';
 const ASSETS = [
   './',
   './index.html',
